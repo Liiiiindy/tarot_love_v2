@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘塔罗 · 命运启示录</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-dim: #8a702a;
+            --bg-dark: #08080c;
+            --glass: rgba(20, 20, 25, 0.7);
+            --border: rgba(212, 175, 55, 0.2);
+            --text-main: #e0e0e0;
+            --neon-glow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Lato', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 背景纹理 */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(212, 175, 55, 0.08), transparent 25%);
+        }
+
+        /* 噪点覆盖层，增加质感 */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* 主容器 */
+        .glass-panel {
+            position: relative;
+            z-index: 1;
+            width: 1200px;
+            height: 85vh;
+            max-width: 95vw;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- 顶部 Header --- */
+        .header {
+            padding: 30px 40px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .brand {
+            font-family: 'Cinzel', serif;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0;
+            color: var(--gold);
+            letter-spacing: 4px;
+            text-shadow: var(--neon-glow);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #888;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        /* --- 输入框区域 --- */
+        .input-area {
+            flex: 1;
+            text-align: right;
+            padding-left: 50px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'Lato', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255,255,255,0.2);
+            font-style: italic;
+        }
+
+        /* --- 主内容区 (双栏) --- */
+        .content-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden; /* 防止溢出 */
+        }
+
+        /* 左侧列表 */
+        .spread-list {
+            width: 40%;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0;
+            /* 隐藏滚动条但保留功能 */
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold-dim) transparent;
+        }
+
+        /* 自定义滚动条 */
+        .spread-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .spread-list::-webkit-scrollbar-thumb {
+            background-color: var(--gold-dim);
+        }
+
+        .spread-item {
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 列表项的流光效果 */
+        .spread-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--gold);
+            transform: scaleY(0);
+            transition: transform 0.3s;
+        }
+
+        .spread-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+            padding-left: 35px; /* 悬停位移 */
+        }
+
+        .spread-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .spread-item.active {
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.15), transparent);
+        }
+
+        .spread-item.active::before {
+            transform: scaleY(1);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .item-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #ccc;
+            transition: color 0.3s;
+        }
+        
+        .spread-item.active .item-title {
+            color: var(--gold);
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .item-icon {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s;
+            color: var(--gold);
+            font-size: 1.2rem;
+        }
+
+        .spread-item.active .item-icon {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* 右侧预览区 */
+        .preview-area {
+            width: 60%;
+            padding: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 0.5), rgba(0,0,0,0.8));
+        }
+
+        /* 背景旋转魔法阵 */
+        .magic-circle {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px; height: 500px;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='90' fill='none' stroke='%23333' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='60' fill='none' stroke='%23333' stroke-width='1' stroke-dasharray='4 4'/%3E%3Cpath d='M100 10 L190 160 L10 160 Z' fill='none' stroke='%23222' stroke-width='1'/%3E%3Cpath d='M100 190 L10 40 L190 40 Z' fill='none' stroke='%23222' stroke-width='1'/%3E%3C/svg%3E");
+            background-size: contain;
+            opacity: 0.1;
+            z-index: 0;
+            animation: rotateCircle 60s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotateCircle {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .preview-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header-large {
+            font-family: 'Cinzel', serif;
+            font-size: 3rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.5s forwards;
+        }
+
+        .preview-description {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #aaa;
+            margin-bottom: 30px;
+            border-left: 3px solid var(--gold-dim);
+            padding-left: 20px;
+            min-height: 60px; /* 占位防止跳动 */
+        }
+
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: auto;
+        }
+
+        .pos-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            animation: fadeIn 0.5s forwards;
+            opacity: 0;
+        }
+
+        .pos-num {
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            color: var(--gold);
+            font-size: 1.2rem;
+            margin-right: 10px;
+            opacity: 0.7;
+        }
+
+        .pos-text {
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+
+        /* 按钮区域 */
+        .action-area {
+            text-align: right;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 20px;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: var(--gold);
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 15px 50px;
+            border: 1px solid var(--gold);
+            border-radius: 2px; /* 更有神秘学符咒的感觉 */
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .start-btn:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .start-btn:hover::before {
+            left: 100%;
+        }
+
+        /* 动画类 */
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #444;
+            text-align: center;
+        }
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <div class="glass-panel">
+        <div class="header">
+            <div class="brand">
+                <h1>TAROT</h1>
+                <div class="subtitle">Fate Revelation System</div>
+            </div>
+            
+            <form id="tarotForm" action="{{ url_for('select') }}" method="GET" class="input-area">
+                <input type="hidden" name="spread" id="selectedSpread" required>
+                <div class="input-wrapper">
+                    <input type="text" name="question" placeholder="在此输入心中的疑惑..." autocomplete="off">
+                </div>
+            </form>
+        </div>
+
+        <div class="content-body">
+            <div class="spread-list" id="spreadList">
+                {% for spread_name in spreads.keys() %}
+                <div class="spread-item" 
+                     data-name="{{ spread_name }}"
+                     onclick="selectSpread(this)"
+                     onmouseenter="previewSpread('{{ spread_name }}')">
+                    <span class="item-title">{{ spread_name }}</span>
+                    <span class="item-icon">❖</span>
+                </div>
+                {% endfor %}
+                <div style="height: 50px;"></div> 
+            </div>
+
+            <div class="preview-area">
+                <div class="magic-circle"></div>
+                
+                <div id="previewContent">
+                    <div class="empty-state">
+                        <div class="empty-icon">☾</div>
+                        <p style="font-family: 'Cinzel'; letter-spacing: 2px;">SELECT A RITUAL<br><span style="font-size: 0.8em; color: #666">选择左侧法阵以开启命运</span></p>
+                    </div>
+                </div>
+
+                <div class="action-area" id="actionArea" style="display: none;">
+                    <button type="button" class="start-btn" onclick="submitForm()">Begin Divination</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const spreadsData = {{ spreads | tojson }};
+        const descriptionsData = {{ descriptions | tojson }};
+        let currentSelection = null;
+        let hoverSelection = null;
+        let typingTimeout = null;
+
+        const previewContainer = document.getElementById('previewContent');
+
+        // 鼠标悬停预览
+        function previewSpread(name) {
+            hoverSelection = name;
+            // 如果没有锁定选择，才显示悬停内容
+            if (!currentSelection) {
+                renderPreview(name, false); // false 表示不做打字机动画，防止鼠标划过太快闪屏
+            }
+        }
+
+        // 鼠标离开列表
+        document.getElementById('spreadList').addEventListener('mouseleave', function() {
+            hoverSelection = null;
+            if (currentSelection) {
+                renderPreview(currentSelection, false);
+            } else {
+                renderEmptyState();
+            }
+        });
+
+        // 点击选择
+        function selectSpread(element) {
+            const name = element.getAttribute('data-name');
+            document.getElementById('selectedSpread').value = name;
+            
+            // 清除之前的激活状态
+            document.querySelectorAll('.spread-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            currentSelection = name;
+            document.getElementById('actionArea').style.display = 'block';
+            
+            // 渲染并启用打字机特效
+            renderPreview(name, true);
+        }
+
+        // 提交表单
+        function submitForm() {
+            if(!currentSelection) return;
+            document.getElementById('tarotForm').submit();
+        }
+
+        function renderPreview(name, enableTyping) {
+            const positions = spreadsData[name];
+            const desc = descriptionsData[name] || "暂无详细指引。";
+            
+            // 生成位置标签
+            let positionsHtml = positions.map((pos, index) => 
+                `<div class="pos-card" style="animation-delay: ${index * 0.05}s">
+                    <span class="pos-num">${toRoman(index + 1)}</span>
+                    <span class="pos-text">${pos}</span>
+                </div>`
+            ).join('');
+
+            // 先渲染基本结构
+            previewContainer.innerHTML = `
+                <div class="preview-header-large">${name}</div>
+                <div class="preview-description" id="typewriterTarget"></div>
+                <div class="positions-grid">
+                    ${positionsHtml}
+                </div>
+            `;
+
+            // 处理打字机特效
+            const target = document.getElementById('typewriterTarget');
+            if (enableTyping) {
+                typeWriter(target, desc, 0);
+            } else {
+                target.textContent = desc;
+            }
+        }
+
+        // 简单的罗马数字转换（用于增加神秘感）
+        function toRoman(num) {
+            const roman = {1:'I', 2:'II', 3:'III', 4:'IV', 5:'V', 6:'VI', 7:'VII', 8:'VIII', 9:'IX', 10:'X'};
+            return roman[num] || num;
+        }
+
+        // 打字机动画函数
+        function typeWriter(element, text, i) {
+            if (typingTimeout) clearTimeout(typingTimeout);
+            element.textContent = ''; // 清空
+            
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    typingTimeout = setTimeout(type, 20); // 打字速度
+                }
+            }
+            type();
+        }
+
+        function renderEmptyState() {
+            previewContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">☾</div>
+                    <p style="font-family: 'Cinzel'; letter-spacing: 2px;">SELECT A RITUAL<br><span style="font-size: 0.8em; color: #666">选择左侧法阵以开启命运</span></p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

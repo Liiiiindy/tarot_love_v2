@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>命运抽取</title>
+    <style>
+        :root {
+            --primary-gold: #d4af37;
+            --primary-glow: rgba(212, 175, 55, 0.5);
+            --bg-deep: #050505;
+            --card-width: 90px;
+            --card-height: 150px;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 50% -20%, #1a0b2e 0%, transparent 60%),
+                radial-gradient(circle at 10% 80%, rgba(50, 0, 80, 0.2) 0%, transparent 40%),
+                url('data:image/svg+xml,<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+            color: #fff;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止页面整体滚动 */
+        }
+
+        /* ----- 顶部区域：标题与卡槽 ----- */
+        .top-area {
+            flex: 0 0 auto;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            z-index: 10;
+        }
+
+        h2 {
+            color: var(--primary-gold);
+            font-weight: 300;
+            letter-spacing: 3px;
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            text-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .instruction {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* 卡槽容器 */
+        .slots-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            min-height: var(--card-height);
+            perspective: 1000px;
+            flex-wrap: wrap; /* 防止小屏幕溢出 */
+        }
+
+        .card-slot {
+            width: var(--card-width);
+            height: var(--card-height);
+            border: 2px dashed rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .card-slot.filled {
+            border-style: solid;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        /* ----- 底部区域：牌河 ----- */
+        .deck-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            overflow-x: auto; /* 允许横向滚动 */
+            padding: 0 50px;
+            /* 隐藏滚动条但允许滚动 */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+            position: relative;
+        }
+        
+        .deck-area::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 牌河容器：让牌横向排布 */
+        .card-stream {
+            display: flex;
+            align-items: center;
+            padding-left: 50vw; /* 初始留白 */
+            padding-right: 50vw;
+            height: 200px;
+        }
+
+        /* ------------------ 卡牌样式设计 ------------------ */
+        .tarot-card {
+            width: var(--card-width);
+            height: var(--card-height);
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            margin-right: -40px; /* 负边距实现重叠效果 */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+            box-shadow: -5px 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* 鼠标滑过牌堆的效果 */
+        .tarot-card:hover {
+            transform: translateY(-30px) scale(1.1);
+            margin-right: 0px; /* 展开 */
+            z-index: 100;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+        }
+
+        /* --- 精致的牌背纹理 (CSS画的) --- */
+        .card-back-design {
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+            border: 2px solid #5a4a2e;
+            box-sizing: border-box;
+            position: absolute;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden;
+            /* 复杂的神秘学纹理 */
+            background-image: 
+                radial-gradient(circle at 50% 50%, transparent 20%, #1a1a2e 21%, #1a1a2e 30%, transparent 31%),
+                conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(212, 175, 55, 0.1) 45deg, transparent 90deg, rgba(212, 175, 55, 0.1) 135deg, transparent 180deg, rgba(212, 175, 55, 0.1) 225deg, transparent 270deg, rgba(212, 175, 55, 0.1) 315deg, transparent 360deg),
+                repeating-linear-gradient(45deg, rgba(80, 60, 20, 0.1) 0px, rgba(80, 60, 20, 0.1) 1px, transparent 1px, transparent 10px),
+                repeating-linear-gradient(-45deg, rgba(80, 60, 20, 0.1) 0px, rgba(80, 60, 20, 0.1) 1px, transparent 1px, transparent 10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 牌背中心的装饰 */
+        .card-back-design::after {
+            content: '✦';
+            font-size: 2rem;
+            color: var(--primary-gold);
+            text-shadow: 0 0 10px var(--primary-gold);
+            opacity: 0.8;
+        }
+
+        /* 牌背边框装饰 */
+        .card-back-design::before {
+            content: '';
+            position: absolute;
+            top: 4px; bottom: 4px; left: 4px; right: 4px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+        }
+
+        /* --- 牌面（正面） --- */
+        .card-face-design {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #222, #000);
+            border: 2px solid var(--primary-gold);
+            backface-visibility: hidden;
+            transform: rotateY(180deg); /* 初始背对 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        .card-name-text {
+            color: var(--primary-gold);
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        .card-orientation-text {
+            color: #aaa;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        /* --- 动画类 --- */
+        
+        /* 选中后的飞牌效果 - JS动态计算坐标，这里只定义过渡 */
+        .flying {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            z-index: 1000 !important;
+            margin: 0 !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* 翻转动画 */
+        .flipped {
+            transform: rotateY(180deg) !important;
+        }
+
+        /* 禁用状态 */
+        .disabled {
+            pointer-events: none;
+            filter: grayscale(1) opacity(0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-area">
+        <h2>{{ spread_name }}</h2>
+        <div class="instruction">
+            请静心冥想你的问题，然后从下方选取 <span class="highlight">{{ num_cards }}</span> 张牌
+        </div>
+        
+        <div class="slots-container" id="slotsContainer">
+            </div>
+    </div>
+
+    <div class="deck-area" id="deckArea">
+        <div class="card-stream">
+            {% for i in range(78) %}
+            <div class="tarot-card" id="card-{{ i }}" onclick="pickCard({{ i }})">
+                <div class="card-back-design"></div>
+                <div class="card-face-design" id="face-{{ i }}">
+                    <div class="card-name-text">?</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // --- 初始化数据 ---
+        const deckInfo = JSON.parse('{{ deck_info|safe }}');
+        const totalNeeded = {{ num_cards }};
+        const spreadName = '{{ spread_name }}';
+        let selectedIndices = [];
+        let isAnimating = false;
+
+        // --- 初始化卡槽 ---
+        const slotsContainer = document.getElementById('slotsContainer');
+        const slots = [];
+        
+        for (let i = 0; i < totalNeeded; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'card-slot';
+            slot.innerText = i + 1;
+            slot.id = `slot-${i}`;
+            slotsContainer.appendChild(slot);
+            slots.push(slot);
+        }
+
+        // --- 抽牌逻辑 ---
+        function pickCard(index) {
+            if (isAnimating || selectedIndices.includes(index) || selectedIndices.length >= totalNeeded) return;
+            
+            isAnimating = true;
+            const cardEl = document.getElementById(`card-${index}`);
+            const currentSlotIndex = selectedIndices.length;
+            const targetSlot = slots[currentSlotIndex];
+            
+            // 1. 获取卡牌和卡槽的位置信息
+            const cardRect = cardEl.getBoundingClientRect();
+            const slotRect = targetSlot.getBoundingClientRect();
+            
+            // 2. 准备数据
+            const cardData = deckInfo[index];
+            const faceEl = document.getElementById(`face-${index}`);
+            
+            // 填充正面信息
+            let rotationStyle = cardData.orientation === '逆位' ? 'transform: rotate(180deg);' : '';
+            faceEl.innerHTML = `
+                <div class="card-name-text" style="${rotationStyle}">${cardData.card}</div>
+                <div class="card-orientation-text">${cardData.orientation}</div>
+            `;
+
+            // 3. 设置卡牌状态为固定（脱离流式布局），准备飞行
+            // 为了保证动画流畅，我们需要计算相对位移
+            // 这里我们采用一种技巧：克隆一个牌用于飞行，原牌占位隐藏
+            
+            const flyingCard = cardEl.cloneNode(true);
+            flyingCard.classList.add('flying');
+            
+            // 设置初始位置（绝对定位）
+            flyingCard.style.position = 'fixed';
+            flyingCard.style.left = cardRect.left + 'px';
+            flyingCard.style.top = cardRect.top + 'px';
+            flyingCard.style.width = cardRect.width + 'px';
+            flyingCard.style.height = cardRect.height + 'px';
+            flyingCard.style.margin = '0';
+            
+            // 移除onclick防止重复点击
+            flyingCard.onclick = null;
+            
+            document.body.appendChild(flyingCard);
+            
+            // 隐藏原来的牌，但保留占位防止布局塌陷太难看（或者直接透明）
+            cardEl.style.opacity = '0';
+            cardEl.style.pointerEvents = 'none';
+
+            // 4. 执行飞行和翻转动画
+            // 强制重绘
+            void flyingCard.offsetWidth;
+
+            // 计算目标位置
+            const targetX = slotRect.left;
+            const targetY = slotRect.top;
+
+            flyingCard.style.left = targetX + 'px';
+            flyingCard.style.top = targetY + 'px';
+            
+            // 同时翻转
+            flyingCard.classList.add('flipped');
+
+            // 5. 动画结束后的处理
+            setTimeout(() => {
+                // 将克隆的牌放入槽位中（变为相对定位，适应响应式）
+                targetSlot.innerHTML = ''; // 清空数字
+                targetSlot.classList.add('filled');
+                
+                flyingCard.style.position = 'absolute';
+                flyingCard.style.left = '0';
+                flyingCard.style.top = '0';
+                flyingCard.style.width = '100%';
+                flyingCard.style.height = '100%';
+                flyingCard.classList.remove('flying'); // 移除飞行类，保持翻转状态
+                
+                targetSlot.appendChild(flyingCard);
+                
+                selectedIndices.push(index);
+                isAnimating = false;
+
+                // 检查是否完成
+                if (selectedIndices.length === totalNeeded) {
+                    setTimeout(submitSelection, 800);
+                }
+
+            }, 600); // 对应CSS transition时间
+        }
+
+        // --- 提交表单 ---
+        function submitSelection() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/draw';
+
+            const indicesInput = document.createElement('input');
+            indicesInput.type = 'hidden';
+            indicesInput.name = 'selected_indices';
+            indicesInput.value = JSON.stringify(selectedIndices);
+            form.appendChild(indicesInput);
+
+            const spreadInput = document.createElement('input');
+            spreadInput.type = 'hidden';
+            spreadInput.name = 'spread';
+            spreadInput.value = spreadName;
+            form.appendChild(spreadInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // --- 自动滚动到中间 ---
+        window.onload = function() {
+            const deckArea = document.getElementById('deckArea');
+            // 简单的居中滚动
+            deckArea.scrollLeft = (deckArea.scrollWidth - deckArea.clientWidth) / 2;
+        };
+    </script>
+</body>
+</html>
